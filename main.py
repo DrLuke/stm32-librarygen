@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
 import sys,os,math
 from lxml import etree
@@ -38,6 +38,7 @@ class device:
         self.package = ""
         self.pins = []
 
+        # Parse xml and pdf, create component and documentation
         self.readxml()
         self.readpdf()
         self.createComponent()
@@ -214,7 +215,7 @@ class device:
         s += "#\r\n"
         s += "# " + self.name.upper() + "\r\n"
         s += "#\r\n"
-        s += "DEF " + self.name + " U 0 40 Y Y 1 L N\r\n"
+        s += "DEF " + self.name.upper() + " U 0 40 Y Y 1 L N\r\n"
         s += "F0 \"U\" " + str(round(-boxwidth/2)) + " " + str(round(boxheight/2) + 25) + " 50 H V L B\r\n"
         s += "F1 \"" + self.name + "\" " + str(round(boxwidth/2)) + " " + str(round(boxheight/2) + 25) + " 50 H V R B\r\n"
         s += "F2 \"" + self.package + "\" " + str(round(boxwidth/2)) + " " + str(round(boxheight/2) - 25) + " 50 H V R T\r\n"
@@ -317,7 +318,7 @@ class device:
         s = ""
         s += "$CMP " + self.name.upper() + "\r\n"
         s += "D Core: " + self.core + " Package: " + self.package + " Flash: " + self.flash + "kB Ram: " + self.ram + "kB Frequency: " + self.freq + "MHz Voltage: " + self.voltage[0] + ".." + self.voltage[1] + "V IO-pins: " + self.io + "\r\n"
-        s += "K " + " ".join([self.core, self.family, self.line]) + "\r\n"
+        s += "K " + " ".join([self.core, self.family, self.line.upper()]) + "\r\n"
         s += "F " + pdfprefix + self.pdf + "\r\n"   # TODO: Add docfiles to devices, maybe url to docfiles follows pattern?
         s += "$ENDCMP\r\n"
         self.docustring = s
@@ -325,7 +326,8 @@ class device:
 
 def main():
     args = sys.argv
-    
+
+    # Basic argument checking
     if(not len(args) == 3 or args[1] == "help"):
         printHelp()
     elif(os.path.isdir(args[1]) and os.path.isdir(args[2])):
@@ -337,12 +339,13 @@ def main():
         lib.write("EESchema-LIBRARY Version 2.3\r\n#encoding utf-8\r\n")
         docu.write("EESchema-DOCLIB  Version 2.0\r\n#\r\n")
 
+        # Find all pdf files
         files = []
         for (dirpath, dirnames, filenames) in os.walk(args[2]):
             files.extend(filenames)
             break
-        
 
+        # Convert all pdf files to python-readable text files
         for pdffile in files:
             pdffile = os.path.join(args[2], pdffile)
             pdfparsedfile = pdffile + ".par"
@@ -350,11 +353,13 @@ def main():
                 print("Converting: " + pdffile)
                 os.system("pdf2txt.py -o " + pdfparsedfile + " " + pdffile)
 
+        # Find all xml files
         files = []
         for (dirpath, dirnames, filenames) in os.walk(args[1]):
             files.extend(filenames)
             break
 
+        # Parse each xml file
         for xmlfile in files:
             mcu = device(os.path.join(args[1], xmlfile), args[2])
             lib.write(mcu.componentstring)
