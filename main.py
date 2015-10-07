@@ -35,6 +35,7 @@ class device:
         self.xmlfile = xmlfile
         self.pdfdir = pdfdir
         self.name = ""
+        self.aliases = []
         self.package = ""
         self.pins = []
 
@@ -52,6 +53,14 @@ class device:
 
         self.name = self.root.get("RefName")
         self.package = self.root.get("Package")
+
+        # Extract all option names from parenthesis and add as aliases
+        match = re.search("\((.*)\)", self.name)
+        if match:
+            match = re.findall("([\w])", match.group(0))
+            for opt in match:
+                self.aliases.append(re.sub("\(.*\)", opt ,self.name))
+            print(self.aliases)
         
         self.bga = False
         for child in self.root.xpath("a:Pin", namespaces=self.ns):
@@ -105,7 +114,7 @@ class device:
             s = s.replace("("+paren+")","o")    # Replace the parenthesis with a lower case 'o'
             paren = paren.split("-")    # Paren contains different options
 
-        #print("NEW: " + s)
+        # print("NEW: " + s)
         candidatestring = {}
         for pdf in files:
             if(pdf.endswith(".pdf.par")):   # Find all processed PDF files and open them for evaluation
@@ -220,6 +229,10 @@ class device:
         s += "F1 \"" + self.name + "\" " + str(round(boxwidth/2)) + " " + str(round(boxheight/2) + 25) + " 50 H V R B\r\n"
         s += "F2 \"" + self.package + "\" " + str(round(boxwidth/2)) + " " + str(round(boxheight/2) - 25) + " 50 H V R T\r\n"
         s += "F3 \"~\" 0 0 50 H V C CNN\r\n"
+
+        if self.aliases:
+            s += "ALIAS " + " ".join(self.aliases) + "\r\n"
+
         s += "DRAW\r\n"
         # Start drawing rectangles and pins
         # Start to iterate through ports alphabetically
